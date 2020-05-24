@@ -1,7 +1,7 @@
 # Easyride
 Backend services for an Uberlike application.
-You can use the web simulator to simulate Driver and Rider's actions
-See instructions below.
+You can use the web simulator to simulate Driver and Rider actions,
+see instructions below.
 
 
 Installation Instruction
