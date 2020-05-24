@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Easyride Rider's App Simulator</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+  <style>
+      #searching{
+          display: none;
+      }
+
+      #newrequest{
+          display: none
+      }
+
+        .loader {
+          border: 16px solid #f3f3f3;
+          border-radius: 50%;
+          border-top: 16px solid #3498db;
+          width: 120px;
+          height: 120px;
+          -webkit-animation: spin 2s linear infinite; /* Safari */
+          animation: spin 2s linear infinite;
+        }
+        
+        /* Safari */
+        @-webkit-keyframes spin {
+          0% { -webkit-transform: rotate(0deg); }
+          100% { -webkit-transform: rotate(360deg); }
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        </style>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+</head>
+<body>
+ 
+    
+<div class="container">
+    <div class="row">
+        <h2>Easyride Rider Simulator</h2>
+            <div class="col-sm-12" style="background-color:lavender;">
+                <div class="panel-group">
+                    <div class="panel panel-default">
+                        <div class="panel-heading"><h2>Rider</h2></div>
+                        <button type="button" id="rideRequest" class="btn btn-primary">Request a Ride</button>
+                        <button type="button" class="btn btn-danger">Terminate request</button>
+                        <div class="well well-lg">
+                                <button type="button" id="p" class="btn btn-default">Login</button>
+                            <p>Status: <span id="status1"></span> </p>
+                            <div id="searching">
+                                    <div class="loader"></div>
+                                    <p>Searching for Drivers...</p>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>    
+            </div>
+
+    </div>
+</div>
+
+</body>
+</html>
+
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    var state = {
+        driver: null,
+        waiting: false,
+        pending: false,
+        timer: null
+    }
+
+    let userData = {
+            userId: "New rider",
+            geolocation: {
+                lat: "6.2100945",
+                lng: "7.0741145"
+            },
+        }
+
+    console.log('socket connection established');
+    let socket = io("http://localhost:2020", {
+            query :{ 
+                userId: userData.userId, 
+                token: ""
+            }   
+        }    
+    )
+    
+
+    document.getElementById("rideRequest").addEventListener("click", function(){
+        document.getElementById("searching").style.display = "block"
+        state.waiting = true
+        findRide(userData)
+    })
+
+    socket.on("foundDriver", (data) => {
+        alert("Driver found..." + data.driver.userId)
+        state.driver = data.driver
+        requestRide(data)
+    })
+
+    socket.on("noDriver", () => {
+        alert("No driver available...")
+        document.getElementById("searching").style.display = "none"
+    })
+
+    socket.on('userOffline', () => {
+        alert('User is offline, try again!')
+    })
+
+    socket.on('driverAccept', () => {
+        state.waiting = false
+        document.getElementById("searching").style.display = "none"
+        alert('Congratulations! driver accepted your ride request...')
+        //checktransaction table
+    })
+
+    socket.on('driverReject', () => {
+        findRide(userData)
+    })
+
+
+    function findRide(data){
+        socket.emit('findRide', data)
+    }
+
+    function requestRide(data){
+        socket.emit('requestRide', data)
+    }
+       
+</script>

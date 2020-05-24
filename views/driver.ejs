@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Easyride Driver App Simulator</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+  <style>
+      #searching{
+          display: none;
+      }
+
+      #newrequest{
+          display: none
+      }
+
+        .loader {
+          border: 16px solid #f3f3f3;
+          border-radius: 50%;
+          border-top: 16px solid #3498db;
+          width: 120px;
+          height: 120px;
+          -webkit-animation: spin 2s linear infinite; /* Safari */
+          animation: spin 2s linear infinite;
+        }
+        
+        /* Safari */
+        @-webkit-keyframes spin {
+          0% { -webkit-transform: rotate(0deg); }
+          100% { -webkit-transform: rotate(360deg); }
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        </style>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+</head>
+<body>
+ 
+    
+<div class="container">
+    <div class="row">
+        <h2>Easyride Driver Simulator</h2>
+           
+            <div class="col-sm-12" style="background-color:lavender;">
+                <div class="panel-group">
+                    <div class="panel panel-default">
+                        <div class="panel-heading"><h2>Driver</h2></div>
+                        <div id="newrequest">
+                            <p>New Ride Request...</p>
+                            <button type="button" class="btn btn-success" id="accept">Accept</button>
+                            <button type="button" class="btn btn-danger" id="reject">Reject</button>
+                        </div>
+                        
+                        <div class="well well-lg">
+                                <button type="button" class="btn btn-danger" id="service">Check Service</button>
+    
+                        </div>
+                        <button type="button" class="btn btn-danger" id="join">Join Network</button>
+                        <div>
+                            <br><br>
+                            <button type="button" class="btn btn-danger" id="endTrip">End Trip</button>
+                        </div>
+                    </div>
+                </div>    
+            </div>
+    </div>
+</div>
+
+</body>
+</html>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+     getLocation()
+    var state = {
+        reject: false,
+        accept: false,
+        status: false,
+        timer: null,
+        payload: null,
+        lat:null,
+        lng:null
+
+    }
+    let local = 'http://localhost:2020'
+    let payload = null
+    let response = false
+     console.log('socket connection established');
+        var socket = io(local, {
+            query :{ 
+                userId: "5e2813e9e6bae93ef7ecd928", 
+                token: ""
+            }   
+        }    
+    )
+
+    document.getElementById("join").addEventListener("click", () => {
+        let data = {
+            userId: "5e2813e9e6bae93ef7ecd928",
+            status: "available",
+            geolocation: {lat: state.lat, lng: state.lng}
+        }
+        socket.emit('addDriver', data)
+        alert('You are now online...')
+    })
+
+
+    document.getElementById("endTrip").addEventListener("click", () => {
+        let id = payload.userId
+        socket.emit('endTrip', id)
+        alert('Trip ended')
+    })
+
+    socket.on('driverRequest', (data) => {
+        document.getElementById('newrequest').style.display = "block"
+        payload = data
+    })
+
+    socket.on('userOffline', () => {
+        alert('User is offline, try again!')
+    })
+
+    socket.on('cancelRide', () => {
+        alert('Ride has been canceled')
+    })
+
+    document.getElementById("accept").addEventListener("click", () => {
+       
+        let acceptPayload = {
+            driver:{
+                userId: "5e2813e9e6bae93ef7ecd928", 
+                geometry: {
+                    lat: state.lat,
+                    lng: state.lng
+                }
+            },
+            rider:{
+                userId: payload.userId,
+                geometry: payload.geometry,
+                location: payload.pickupAddress,
+                destination: payload.destinationAddress,
+                estimate: payload.estimate,
+                paymentMethod:payload.paymentType
+            }
+        }
+        socket.emit('acceptedRequest', acceptPayload)
+        document.getElementById('newrequest').style.display = "none"
+    })
+    
+
+    document.getElementById("reject").addEventListener("click", () => {
+        socket.emit('rejectedRequest', state.payload)
+        document.getElementById('newrequest').style.display = "none"
+    })
+    
+    function getLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(showPosition);
+            } else {
+            alert('geolocation not working...')
+        }
+    }
+
+    function showPosition(position) {
+        state.lat =  position.coords.latitude
+        state.lng =  position.coords.longitude
+        alert('geoloaction set...')
+    }
+
+    $(document).ready(function(){
+       
+        $("#service").click(function(){
+            $.post("http://localhost:2020/service",
+            {
+            userType: "driver",
+            userId: "axtinasdersd"
+            },
+            function(data, status){
+            alert("Data: " + data.length + "\nStatus: " + status);
+            });
+        });
+    });
+
+</script>
